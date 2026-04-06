@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://nestmate-1.onrender.com/api'; 
 
 export const postRequest = async (endpoint, data) => {
     const response = await fetch(`${API_BASE}${endpoint}`, {
