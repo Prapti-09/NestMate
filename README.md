@@ -50,4 +50,4 @@ NestMate is a modern, scalable full-stack web application designed to simplify s
 - Complete the lifestyle questionnaire via the "Compatibility Profile" in the dashboard.
 
 ---
-Built with ❤️ for students.
+Built with ❤️ for students..
