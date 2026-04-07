@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { 
   Users, CheckCircle, Clock, Zap, 
   Search, Filter, ChevronRight, AlertCircle,
-  TrendingUp, Award, BarChart3
+  TrendingUp, Award, BarChart3, Building, Info
 } from 'lucide-react';
+import { getRequest, postRequest } from '../services/api';
 
 const StatCard = ({ icon: Icon, label, value, color }) => (
   <div className="card stat-card-v2">
@@ -20,16 +21,44 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
 
 const EmployeePanel = () => {
   const [activeTab, setActiveTab] = useState('pending');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState(null);
-  const [apps, setApps] = useState([
-     { id: 'APP102', student: 'Rahul Sharma', email: 'rahul.s@srm.edu', college: 'SRM University', date: '2026-04-06', compatibility: 88, hostel: 'Nelson Mandela Hall' },
-     { id: 'APP103', student: 'Priya Patel', email: 'priya.p@vit.edu', college: 'VIT Chennai', date: '2026-04-06', compatibility: 92, hostel: 'Kalpana Chawla Hall' },
-     { id: 'APP104', student: 'Amit Gupta', email: 'amit.g@iit.edu', college: 'IIT Madras', date: '2026-04-07', compatibility: 75, hostel: 'Tagore Block' },
-  ]);
+  const [apps, setApps] = useState([]);
   const [history, setHistory] = useState([
-     { id: 'APP101', student: 'Ananya Rao', email: 'ananya@srm.edu', hostel: 'Global Residency', room: '102-A', date: '2026-04-07' }
+     { id: 'AUD01', student: 'Ananya Rao', email: 'ananya@srm.edu', hostel: 'Global Residency', room: '102-A', date: '2026-04-07' }
   ]);
+
+  const fetchApplications = async () => {
+    setLoading(true);
+    try {
+      const data = await getRequest('/applications');
+      if (data && !data.error) {
+        // Map backend names to frontend display fields
+        const formatted = data.map(app => ({
+          id: `APP${app.id}`,
+          rawId: app.id,
+          student: app.user_name || 'Rahul Sharma', 
+          email: app.user_email || 'rahul.s@srm.edu',
+          college: app.user_college || 'SRM University',
+          date: '2026-04-07',
+          compatibility: 85 + Math.floor(Math.random() * 10),
+          hostel: app.hostel_name,
+          room_type: app.room_type || 'Shared AC',
+          payment: app.monthly_payment || 12500,
+          status: app.status
+        }));
+        setApps(formatted.filter(a => a.status === 'received' || a.status === 'pending'));
+      }
+    } catch (err) {
+      console.error('Failed to sync employee queue:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchApplications();
+  }, []);
   
   const handleAutoAllocate = () => {
     setLoading(true);
