@@ -9,6 +9,7 @@ import {
   Eye, Calendar, GraduationCap, Phone
 } from 'lucide-react';
 import { postRequest } from '../services/api';
+import { useAuth } from '../context/AuthContext'; // IMPORTING THE HEARTBEAT
 
 const Amenity = ({ icon: Icon, label }) => (
   <div className="amenity-item">
@@ -29,6 +30,7 @@ const TravelTime = ({ icon: Icon, label, time, active }) => (
 
 function PropertyDetails() {
   const { id } = useParams();
+  const { user: authUser } = useAuth(); // ACCESSING THE LIVE IDENTITY
   const [numRoommates, setNumRoommates] = useState(1);
   const [isBooking, setIsBooking] = useState(false);
   const basePrice = 12500;
@@ -38,17 +40,16 @@ function PropertyDetails() {
   const handleBooking = async () => {
     setIsBooking(true);
     try {
-      // SMART LOGIN CHECK: Synchronized with nestmate_user context
-      const rawUser = localStorage.getItem('nestmate_user');
-      if (!rawUser) {
+      // SMART IDENTITY CHECK: Heartbeat check first, fallback to storage
+      const activeUser = authUser || JSON.parse(localStorage.getItem('nestmate_user'));
+      
+      if (!activeUser) {
         alert("Please login as a student to book.");
         window.location.href = '/login';
         return;
       }
       
-      const userData = JSON.parse(rawUser);
-      // Works for both nested and flat user objects
-      const userId = userData.id || (userData.user && userData.user.id);
+      const userId = activeUser.id || (activeUser.user && activeUser.user.id);
       
       if (!userId) {
         alert("Session incomplete. Please re-login to book.");

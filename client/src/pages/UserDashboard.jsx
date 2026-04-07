@@ -203,14 +203,22 @@ const UserDashboard = () => {
       try {
         // 1. Get Application Status (Fetch ALL applications)
         const appData = await getRequest(`/applications/user/${user.id}`);
-        if (appData && !appData.error) {
-          setApplications(Array.isArray(appData) ? appData : [appData]);
+        if (appData && Array.isArray(appData)) {
+          setApplications(appData);
+        } else if (appData && !appData.error) {
+           setApplications([appData]);
+        } else {
+           setApplications([]);
         }
 
         // 2. Get Allocation Details (Fetch ALL allocations)
         const allocData = await getRequest(`/allocations/user/${user.id}`);
-        if (allocData && !allocData.error) {
-          setAllocations(Array.isArray(allocData) ? allocData : [allocData]);
+        if (allocData && Array.isArray(allocData)) {
+          setAllocations(allocData);
+        } else if (allocData && !allocData.error) {
+           setAllocations([allocData]);
+        } else {
+           setAllocations([]);
         }
       } catch (err) {
         console.error('Failed to sync with Cloud DB:', err);

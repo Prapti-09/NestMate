@@ -32,25 +32,28 @@ const EmployeePanel = () => {
     setLoading(true);
     try {
       const data = await getRequest('/applications');
-      if (data && !data.error) {
+      if (data && Array.isArray(data)) {
         // Map backend names to frontend display fields
         const formatted = data.map(app => ({
           id: `APP${app.id}`,
           rawId: app.id,
-          student: app.user_name || 'Rahul Sharma', 
-          email: app.user_email || 'rahul.s@srm.edu',
+          student: app.user_name || 'Guest User', 
+          email: app.user_email || 'No email',
           college: app.user_college || 'SRM University',
           date: '2026-04-07',
           compatibility: 85 + Math.floor(Math.random() * 10),
-          hostel: app.hostel_name,
+          hostel: app.hostel_name || 'TBD',
           room_type: app.room_type || 'Shared AC',
           payment: app.monthly_payment || 12500,
           status: app.status
         }));
         setApps(formatted.filter(a => a.status === 'received' || a.status === 'pending'));
+      } else {
+        setApps([]);
       }
     } catch (err) {
       console.error('Failed to sync employee queue:', err);
+      setApps([]);
     } finally {
       setLoading(false);
     }
