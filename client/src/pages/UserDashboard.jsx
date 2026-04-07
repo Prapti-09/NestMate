@@ -128,11 +128,10 @@ const ComplianceTracker = () => {
   );
 };
 
-const PaymentCalendar = () => {
+const PaymentCalendar = ({ isAllocated }) => {
   // Hard-coded for the April 7th Presentation
   const presentationDate = new Date(2026, 3, 7); 
   const currentMonth = presentationDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const todayDate = 7; 
   
   const days = [];
   for (let i = -5; i < 9; i++) {
@@ -159,11 +158,20 @@ const PaymentCalendar = () => {
           ))}
        </div>
        <div className="next-payment-v3">
-          <div className="pay-text">
-             <h4>Next Payment Due</h4>
-             <p>₹12,400 per month (Premium AC)</p>
-          </div>
-          <Link to="/payment" className="btn btn-primary btn-sm"><CreditCard size={14} /> Pay Now</Link>
+          {isAllocated ? (
+             <>
+                <div className="pay-text">
+                   <h4>Next Payment Due</h4>
+                   <p>₹12,400 per month (Premium AC)</p>
+                </div>
+                <Link to="/payment" className="btn btn-primary btn-sm"><CreditCard size={14} /> Pay Now</Link>
+             </>
+          ) : (
+             <div className="pay-text waiting-v3">
+                <h4>No Active Payments</h4>
+                <p>Status: Waiting for Hostel Allocation</p>
+             </div>
+          )}
        </div>
     </div>
   );
@@ -257,7 +265,7 @@ const UserDashboard = () => {
 
               <div className="summary-widgets-v3">
                  <ComplianceTracker />
-                 <PaymentCalendar />
+                 <PaymentCalendar isAllocated={applications.some(app => app.status === 'allocated')} />
               </div>
 
               <section className="dashboard-section-v3" id="bookings">

@@ -38,17 +38,28 @@ function PropertyDetails() {
   const handleBooking = async () => {
     setIsBooking(true);
     try {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (!userData) {
+      // SMART LOGIN CHECK: Reads from localStorage "user" or "auth_user"
+      const rawUser = localStorage.getItem('user') || localStorage.getItem('auth_user');
+      if (!rawUser) {
         alert("Please login as a student to book.");
+        window.location.href = '/login';
+        return;
+      }
+      
+      const userData = JSON.parse(rawUser);
+      // Robust ID check: Works for both {id:1} and {user: {id:1}} formats
+      const userId = userData.id || (userData.user && userData.user.id);
+      
+      if (!userId) {
+        alert("Session incomplete. Please re-login to book.");
         window.location.href = '/login';
         return;
       }
 
       const bookingData = {
-        user_id: userData.id,
+        user_id: userId,
         hostel_id: id,
-        hostel_name: "The Urban Living PG", // Should be dynamic from state/props
+        hostel_name: "The Urban Living PG", 
         room_type: numRoommates === 1 ? "Single" : "Shared",
         monthly_payment: totalPrice,
         status: 'received'
