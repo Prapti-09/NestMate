@@ -83,35 +83,44 @@ const AllocationStages = ({ currentStage, hostelName }) => {
 };
 
 const ComplianceTracker = () => {
-  const documents = [
-    { name: 'Student ID Card', status: 'verified', date: 'Mar 28, 2026' },
-    { name: 'Residence Proof', status: 'verified', date: 'Mar 29, 2026' },
+  const [docs, setDocs] = useState([
+    { name: 'Student ID Card', status: 'verified', date: 'April 5, 2026' },
     { name: 'Admission Letter', status: 'pending', date: 'Reviewing' },
-    { name: 'Medical Certificate', status: 'missing', date: '-' }
-  ];
+    { name: 'Address Proof', status: 'missing', date: '-' }
+  ]);
 
-  const total = documents.length;
-  const done = documents.filter(d => d.status === 'verified').length;
-  const percent = Math.round((done / total) * 100);
+  const handleSubmit = (name) => {
+    setDocs(docs.map(d => d.name === name ? { ...d, status: 'pending', date: 'Submitted Today' } : d));
+    alert(`${name} submitted successfully for verification!`);
+  };
+
+  const done = docs.filter(d => d.status === 'verified').length;
+  const percent = Math.round((done / docs.length) * 100);
 
   return (
     <div className="card compliance-card-v3">
        <div className="comp-header">
           <div className="comp-title-wrap">
-             <h3>Compliance Checklist</h3>
-             <p>{done} of {total} documents approved</p>
+             <h3>Document Compliance</h3>
+             <p>{done} of {docs.length} tasks matching</p>
           </div>
           <div className="comp-percent">{percent}%</div>
        </div>
        <div className="doc-list-v3">
-          {documents.map(doc => (
+          {docs.map(doc => (
             <div key={doc.name} className="doc-item-v3">
                <div className={`status-dot ${doc.status}`}></div>
                <div className="doc-info">
                   <span className="doc-name">{doc.name}</span>
                   <span className="doc-statusText">{doc.date}</span>
                </div>
-               {doc.status === 'verified' ? <CheckCircle2 size={16} color="#10b981" /> : <ArrowUpRight size={16} color="#94a3b8" />}
+               {doc.status === 'missing' ? (
+                 <button className="submit-tiny-btn" onClick={() => handleSubmit(doc.name)}><ArrowUpRight size={14} /> Submit</button>
+               ) : doc.status === 'verified' ? (
+                 <CheckCircle2 size={16} color="#10b981" />
+               ) : (
+                 <Clock size={16} color="#f97316" />
+               )}
             </div>
           ))}
        </div>
@@ -120,19 +129,18 @@ const ComplianceTracker = () => {
 };
 
 const PaymentCalendar = () => {
-  const today = new Date();
-  const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const todayDate = today.getDate(); // Will show 7
+  // Hard-coded for the April 7th Presentation
+  const presentationDate = new Date(2026, 3, 7); 
+  const currentMonth = presentationDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const todayDate = 7; 
   
   const days = [];
-  // Generate a mini strip of 14 days around today
   for (let i = -5; i < 9; i++) {
-    const d = new Date();
-    d.setDate(todayDate + i);
+    const d = new Date(2026, 3, 7 + i);
     days.push({ 
       d: d.getDate(), 
-      h: d.getDate() === todayDate, 
-      t: d.getDate() === todayDate ? 'Today' : (d.getDate() === 15 ? 'Due' : null) 
+      h: d.getDate() === 7, 
+      t: d.getDate() === 7 ? 'Today' : (d.getDate() === 15 ? 'Due' : null) 
     });
   }
 

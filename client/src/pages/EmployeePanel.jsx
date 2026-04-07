@@ -21,6 +21,7 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
 const EmployeePanel = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [loading, setLoading] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
   const [apps, setApps] = useState([
      { id: 'APP102', student: 'Rahul Sharma', email: 'rahul.s@srm.edu', college: 'SRM University', date: '2026-04-06', compatibility: 88, hostel: 'Nelson Mandela Hall' },
      { id: 'APP103', student: 'Priya Patel', email: 'priya.p@vit.edu', college: 'VIT Chennai', date: '2026-04-06', compatibility: 92, hostel: 'Kalpana Chawla Hall' },
@@ -139,7 +140,7 @@ const EmployeePanel = () => {
                                           </div>
                                       </td>
                                       <td>
-                                          <button className="btn-icon-table" onClick={() => alert(`Reviewing documents for ${app.student}...`)}><ChevronRight size={18} /></button>
+                                          <button className="btn-icon-table" onClick={() => setSelectedApp(app)}><ChevronRight size={18} /></button>
                                       </td>
                                     </tr>
                                 ))}
@@ -228,6 +229,66 @@ const EmployeePanel = () => {
                     </div>
                  </div>
               )}
+
+              <AnimatePresence>
+                  {selectedApp && (
+                     <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="modal-overlay-v3"
+                     >
+                        <motion.div 
+                           initial={{ scale: 0.9, y: 20 }}
+                           animate={{ scale: 1, y: 0 }}
+                           className="card admin-detail-modal"
+                        >
+                           <div className="modal-header">
+                              <Users size={24} color="#7c3aed" />
+                              <h3>Review Booking Request</h3>
+                              <button className="close-btn" onClick={() => setSelectedApp(null)}>&times;</button>
+                           </div>
+                           
+                           <div className="modal-body">
+                              <div className="student-profile-section">
+                                 <h4>Student Identity</h4>
+                                 <div className="info-row">
+                                    <span>Full Name:</span> <strong>{selectedApp.student}</strong>
+                                 </div>
+                                 <div className="info-row">
+                                    <span>Account:</span> <strong>{selectedApp.email}</strong>
+                                 </div>
+                              </div>
+
+                              <div className="request-details-section">
+                                 <h4>Requested Accommodation</h4>
+                                 <div className="detail-box-v3">
+                                    <div className="info-row">
+                                       <Building size={16} /> <span>Hostel Name:</span> <strong>{selectedApp.hostel}</strong>
+                                    </div>
+                                    <div className="info-row">
+                                       <Zap size={16} /> <span>Room Type:</span> <strong>Premium {selectedApp.compatibility > 85 ? 'Single' : 'Shared AC'}</strong>
+                                    </div>
+                                    <div className="info-row">
+                                       <Clock size={16} /> <span>Monthly Payment:</span> <strong>₹12,500 / month</strong>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="admin-actions">
+                                 <button 
+                                   className="btn btn-primary w-full" 
+                                   onClick={() => { alert('Allocation Finalized: Student Notified.'); setSelectedApp(null); }}
+                                 >
+                                    Approve Allocation
+                                 </button>
+                                 <button className="btn btn-outline w-full" onClick={() => setSelectedApp(null)}>Flag for Missing Docs</button>
+                              </div>
+                           </div>
+                        </motion.div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
            </main>
         </div>
       </div>
