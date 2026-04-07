@@ -38,8 +38,8 @@ function PropertyDetails() {
   const handleBooking = async () => {
     setIsBooking(true);
     try {
-      // SMART LOGIN CHECK: Reads from localStorage "user" or "auth_user"
-      const rawUser = localStorage.getItem('user') || localStorage.getItem('auth_user');
+      // SMART LOGIN CHECK: Synchronized with nestmate_user context
+      const rawUser = localStorage.getItem('nestmate_user');
       if (!rawUser) {
         alert("Please login as a student to book.");
         window.location.href = '/login';
@@ -47,7 +47,7 @@ function PropertyDetails() {
       }
       
       const userData = JSON.parse(rawUser);
-      // Robust ID check: Works for both {id:1} and {user: {id:1}} formats
+      // Works for both nested and flat user objects
       const userId = userData.id || (userData.user && userData.user.id);
       
       if (!userId) {
