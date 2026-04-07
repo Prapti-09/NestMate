@@ -11,35 +11,73 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getRequest } from '../services/api';
 
-const AllocationStages = ({ currentStage }) => {
+const AllocationStages = ({ currentStage, hostelName }) => {
+  const [selectedInfo, setSelectedInfo] = useState(null);
+  
   const stages = [
-    { id: 1, title: 'Received', icon: FileText, desc: 'Application submitted' },
-    { id: 2, title: 'Verification', icon: ShieldCheck, desc: 'Identity & eligibility check' },
-    { id: 3, title: 'Matching', icon: Zap, desc: 'Roommate compatibility sync' },
-    { id: 4, title: 'Selection', icon: Building, desc: 'Best-fit room reserved' },
-    { id: 5, title: 'Key Issued', icon: CheckCircle2, desc: 'Digital key activated' }
+    { id: 1, title: 'Received', icon: FileText, desc: 'Application submitted', info: 'Your request for ' + hostelName + ' was logged in our cloud database successfully.' },
+    { id: 2, title: 'Verification', icon: ShieldCheck, desc: 'Identity check', info: 'Academic and residency documents are currently being cross-referenced by staff.' },
+    { id: 3, title: 'Matching', icon: Zap, desc: 'Roommate sync', info: 'Finding the most compatible roommate based on your lifestyle preferences.' },
+    { id: 4, title: 'Selection', icon: Building, desc: 'Room reserved', info: 'A specific room in block ' + hostelName[0] + ' is being held for you.' },
+    { id: 5, title: 'Key Issued', icon: CheckCircle2, desc: 'Key activated', info: 'Welcome home! Your digital key is now active on your mobile app.' }
   ];
 
+  const handleStageClick = (stage) => {
+    if (stage.id <= currentStage) {
+      setSelectedInfo({ title: stage.title, text: stage.info, type: 'valid' });
+    } else {
+      setSelectedInfo({ title: stage.title, text: 'Note: Invalid action. You have not reached this stage for ' + hostelName + ' yet.', type: 'invalid' });
+    }
+  };
+
   return (
-    <div className="allocation-pipeline">
-      {stages.map((stage, idx) => {
-        const isActive = stage.id <= currentStage;
-        const isCurrent = stage.id === currentStage;
-        return (
-          <div key={stage.id} className={`pipeline-step ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}`}>
-            <div className="step-connector-wrap">
-               <div className="step-node">
-                  <stage.icon size={18} />
+    <div className="allocation-context-wrapper">
+      <div className="allocation-pipeline">
+        {stages.map((stage, idx) => {
+          const isActive = stage.id <= currentStage;
+          const isCurrent = stage.id === currentStage;
+          return (
+            <div 
+              key={stage.id} 
+              className={`pipeline-step ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}`}
+              onClick={() => handleStageClick(stage)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="step-connector-wrap">
+                 <div className="step-node">
+                    <stage.icon size={18} />
+                 </div>
+                 {idx !== stages.length - 1 && <div className="step-connector"></div>}
+              </div>
+              <div className="step-labels">
+                 <span className="step-title">{stage.title}</span>
+                 <span className="step-desc">{stage.desc}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      <AnimatePresence mode="wait">
+        {selectedInfo && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className={`stage-feedback-box ${selectedInfo.type}`}
+          >
+            <div className="feedback-content">
+               <div className="feedback-icon">
+                  {selectedInfo.type === 'valid' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                </div>
-               {idx !== stages.length - 1 && <div className="step-connector"></div>}
+               <div className="feedback-text">
+                  <strong>{selectedInfo.title} Status:</strong> {selectedInfo.text}
+               </div>
             </div>
-            <div className="step-labels">
-               <span className="step-title">{stage.title}</span>
-               <span className="step-desc">{stage.desc}</span>
-            </div>
-          </div>
-        );
-      })}
+            <button className="close-feedback" onClick={() => setSelectedInfo(null)}>&times;</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -82,13 +120,21 @@ const ComplianceTracker = () => {
 };
 
 const PaymentCalendar = () => {
-  const currentMonth = "April 2026";
-  const days = [
-    { d: 4, h: false }, { d: 5, h: false }, { d: 6, h: true, t: 'Today' }, 
-    { d: 7, h: false }, { d: 8, h: false }, { d: 9, h: false }, { d: 10, h: false },
-    { d: 11, h: false }, { d: 12, h: false }, { d: 13, h: false }, { d: 14, h: false },
-    { d: 15, h: true, t: 'Due' }
-  ];
+  const today = new Date();
+  const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const todayDate = today.getDate(); // Will show 7
+  
+  const days = [];
+  // Generate a mini strip of 14 days around today
+  for (let i = -5; i < 9; i++) {
+    const d = new Date();
+    d.setDate(todayDate + i);
+    days.push({ 
+      d: d.getDate(), 
+      h: d.getDate() === todayDate, 
+      t: d.getDate() === todayDate ? 'Today' : (d.getDate() === 15 ? 'Due' : null) 
+    });
+  }
 
   return (
     <div className="card calendar-card-v3">
@@ -97,8 +143,8 @@ const PaymentCalendar = () => {
           <span>{currentMonth}</span>
        </div>
        <div className="calendar-strip">
-          {days.map(day => (
-            <div key={day.d} className={`cal-day ${day.h ? 'highlight' : ''}`}>
+          {days.map((day, idx) => (
+            <div key={idx} className={`cal-day ${day.h ? 'highlight' : ''}`}>
                <span className="day-num">{day.d}</span>
                {day.t && <span className="day-label">{day.t}</span>}
             </div>
@@ -119,36 +165,52 @@ const UserDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [application, setApplication] = useState(null);
   const [allocation, setAllocation] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Handle hash scrolling
-    if (location.hash) {
-      const id = location.hash.replace('#', '');
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+  // Map DB status to Pipeline Stage (1-5)
+  const getStageFromStatus = (status) => {
+    switch (status) {
+      case 'pending': return 1;
+      case 'approved': return 2;
+      case 'matching': return 3;
+      case 'selection': return 4;
+      case 'allocated': return 5;
+      default: return 1;
     }
-  }, [location, loading]);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
       try {
-        const data = await getRequest(`/allocation/${user.id}`);
-        if (data && !data.error) {
-          setAllocation(data);
+        // 1. Get Application Status (Fetch ALL applications)
+        const appData = await getRequest(`/applications/user/${user.id}`);
+        if (appData && !appData.error) {
+          setApplications(Array.isArray(appData) ? appData : [appData]);
+        }
+
+        // 2. Get Allocation Details (Fetch ALL allocations)
+        const allocData = await getRequest(`/allocations/user/${user.id}`);
+        if (allocData && !allocData.error) {
+          setAllocations(Array.isArray(allocData) ? allocData : [allocData]);
         }
       } catch (err) {
-        console.error('Failed to fetch allocation data');
+        console.error('Failed to sync with Cloud DB:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, [user]);
+
+  const [applications, setApplications] = useState([]);
+  const [allocations, setAllocations] = useState([]);
+
+  const getCurrentAllocationForApp = (appId) => {
+    return allocations.find(a => a.application_id === appId);
+  };
 
   return (
     <div className="user-dashboard-v3">
@@ -193,33 +255,58 @@ const UserDashboard = () => {
               <section className="dashboard-section-v3" id="bookings">
                  <div className="section-title-v3">
                     <h2>Hostel Allocation Lifecycle</h2>
-                    <span className="live-pill">Live Updates</span>
+                    <span className="live-pill">{applications.length} Active Requests</span>
                  </div>
                  
-                 <div className="card pipeline-card-v3">
-                    <div className="pipeline-header">
-                       <Clock size={16} /> <span>Current Status: {allocation ? 'Allocation Finalized' : 'Verification In Progress'}</span>
+                 {applications.length > 0 ? (
+                    <div className="applications-stack">
+                       {applications.map(app => {
+                          const appAlloc = getCurrentAllocationForApp(app.id);
+                          return (
+                            <div key={app.id} className="card pipeline-card-v3 mb-4">
+                                <div className="pipeline-header">
+                                   <div className="hostel-ref">
+                                      <Building size={16} />
+                                      <strong>{app.hostel_name}</strong>
+                                   </div>
+                                   <div className="status-badge">
+                                      <Clock size={14} /> <span>{app.status.toUpperCase()}</span>
+                                   </div>
+                                </div>
+                                
+                                <AllocationStages currentStage={getStageFromStatus(app.status)} hostelName={app.hostel_name} />
+                                
+                                {app.status === 'allocated' && appAlloc ? (
+                                   <div className="allocation-success-box">
+                                      <div className="residence-card">
+                                         <div className="res-icon"><Building size={24} /></div>
+                                         <div className="res-info">
+                                            <h4>{appAlloc.hostel_name}</h4>
+                                            <p>Room {appAlloc.room_number} • Your booking is finalized.</p>
+                                         </div>
+                                         <button className="btn btn-outline btn-sm">Download Letter</button>
+                                      </div>
+                                   </div>
+                                ) : (
+                                   <div className="allocation-notice-v3">
+                                      <Info size={18} />
+                                      <p>Booking for {app.hostel_name}. Interaction above will show detailed step progress.</p>
+                                   </div>
+                                )}
+                            </div>
+                          );
+                       })}
                     </div>
-                    <AllocationStages currentStage={allocation ? 5 : 2} />
-                    
-                    {allocation ? (
-                       <div className="allocation-success-box">
-                          <div className="residence-card">
-                             <div className="res-icon"><Building size={24} /></div>
-                             <div className="res-info">
-                                <h4>{allocation.hostel_name}</h4>
-                                <p>Room {allocation.room_number} • Block A-02</p>
-                             </div>
-                             <button className="btn btn-outline btn-sm">Download Allotment Letter</button>
-                          </div>
-                       </div>
-                    ) : (
-                       <div className="allocation-notice-v3">
-                          <Info size={18} />
-                          <p>We are currently matching you with roommates who share your <strong>Sleep (Early)</strong> and <strong>Study (Quiet)</strong> habits.</p>
-                       </div>
-                    )}
-                 </div>
+                 ) : (
+                    <div className="card pipeline-card-v3">
+                      <div className="empty-state-v3">
+                         <Building size={48} color="#cbd5e1" />
+                         <h3>No Applications Found</h3>
+                         <p>You haven't applied for a hostel yet. Explore our stays to begin.</p>
+                         <Link to="/search" className="btn btn-primary">Browse Hostels</Link>
+                      </div>
+                    </div>
+                 )}
               </section>
 
               <section className="dashboard-section-v3" id="profile">

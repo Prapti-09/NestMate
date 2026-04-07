@@ -36,23 +36,4 @@ router.get('/admin/dashboard', getAdminDashboard);
 router.get('/admin/hostels', getAdminHostels);
 router.get('/admin/staff', getAdminStaff);
 
-// Admin Stats & Performance
-router.get('/admin/staff-stats', async (req, res) => {
-    try {
-        const [stats] = await db.query(`
-            SELECT u.name, u.email, 
-            COUNT(sl.id) as total_actions,
-            SUM(CASE WHEN sl.action = 'approved' THEN 1 ELSE 0 END) as approvals,
-            SUM(CASE WHEN sl.action = 'allocated' THEN 1 ELSE 0 END) as allocations
-            FROM users u
-            LEFT JOIN staff_logs sl ON u.id = sl.employee_id
-            WHERE u.role = 'employee'
-            GROUP BY u.id
-        `);
-        res.json(stats);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch staff stats' });
-    }
-});
-
 module.exports = router;

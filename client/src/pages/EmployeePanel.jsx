@@ -22,17 +22,27 @@ const EmployeePanel = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [loading, setLoading] = useState(false);
   const [apps, setApps] = useState([
-     { id: 'APP102', student: 'Rahul Sharma', college: 'SRM University', date: '2026-04-01', compatibility: 88 },
-     { id: 'APP103', student: 'Priya Patel', college: 'VIT Chennai', date: '2026-04-02', compatibility: 92 },
-     { id: 'APP104', student: 'Amit Gupta', college: 'IIT Madras', date: '2026-04-03', compatibility: 75 },
+     { id: 'APP102', student: 'Rahul Sharma', email: 'rahul.s@srm.edu', college: 'SRM University', date: '2026-04-06', compatibility: 88, hostel: 'Nelson Mandela Hall' },
+     { id: 'APP103', student: 'Priya Patel', email: 'priya.p@vit.edu', college: 'VIT Chennai', date: '2026-04-06', compatibility: 92, hostel: 'Kalpana Chawla Hall' },
+     { id: 'APP104', student: 'Amit Gupta', email: 'amit.g@iit.edu', college: 'IIT Madras', date: '2026-04-07', compatibility: 75, hostel: 'Tagore Block' },
+  ]);
+  const [history, setHistory] = useState([
+     { id: 'APP101', student: 'Ananya Rao', email: 'ananya@srm.edu', hostel: 'Global Residency', room: '102-A', date: '2026-04-07' }
   ]);
   
   const handleAutoAllocate = () => {
     setLoading(true);
     setTimeout(() => {
+      // Move all current apps to history
+      const newHistory = apps.map(app => ({
+        ...app,
+        room: Math.floor(100 + Math.random() * 900) + '-B',
+        date: '2026-04-07'
+      }));
+      setHistory([...history, ...newHistory]);
       setApps([]);
       setLoading(false);
-      alert('FIFO Queue Processed: 3 Students Allocated.');
+      alert('FIFO Queue Processed: 3 Students Assigned to Cloud Rooms.');
     }, 2000);
   };
 
@@ -84,60 +94,101 @@ const EmployeePanel = () => {
            </aside>
 
            <main className="panel-main">
-              {activeTab === 'pending' && (
-                 <div className="card table-card">
-                    <div className="table-header">
-                       <h2>Pending Applications (FIFO)</h2>
-                       <div className="table-actions">
-                          <button 
-                            className="btn btn-primary btn-sm" 
-                            onClick={handleAutoAllocate}
-                            disabled={loading || apps.length === 0}
-                          >
-                             {loading ? 'Processing...' : <><Zap size={16} /> Auto-Allocate All</>}
-                          </button>
-                       </div>
+               {activeTab === 'pending' && (
+                  <div className="apps-stack-v3">
+                    <div className="card table-card mb-4">
+                        <div className="table-header">
+                          <h2>Live Application Queue (FIFO)</h2>
+                          <div className="table-actions">
+                              <button 
+                                className="btn btn-primary btn-sm" 
+                                onClick={handleAutoAllocate}
+                                disabled={loading || apps.length === 0}
+                              >
+                                {loading ? 'Processing...' : <><Zap size={16} /> Auto-Allocate All</>}
+                              </button>
+                          </div>
+                        </div>
+                        {apps.length > 0 ? (
+                          <table className="modern-table">
+                              <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Student Account</th>
+                                    <th>College</th>
+                                    <th>Preferred Stay</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {apps.map(app => (
+                                    <tr key={app.id}>
+                                      <td>{app.id}</td>
+                                      <td>
+                                          <div className="student-profile-v3">
+                                            <strong>{app.student}</strong>
+                                            <small>{app.email}</small>
+                                          </div>
+                                      </td>
+                                      <td>{app.college}</td>
+                                      <td><div className="hostel-badge-v3">{app.hostel}</div></td>
+                                      <td>
+                                          <div className="score-pill" style={{ background: app.compatibility > 85 ? '#dcfce7' : '#fef9c3' }}>
+                                            {app.compatibility}% Match
+                                          </div>
+                                      </td>
+                                      <td>
+                                          <button className="btn-icon-table" onClick={() => alert(`Reviewing documents for ${app.student}...`)}><ChevronRight size={18} /></button>
+                                      </td>
+                                    </tr>
+                                ))}
+                              </tbody>
+                          </table>
+                        ) : (
+                          <div className="empty-state text-center py-10">
+                              <CheckCircle size={48} color="#10b981" />
+                              <h3 className="mt-4">Queue Clear!</h3>
+                              <p>All applications have been moved to the Audit History.</p>
+                          </div>
+                        )}
                     </div>
-                    {apps.length > 0 ? (
-                       <table className="modern-table">
+
+                    <div className="card table-card history-card-v3">
+                       <div className="table-header">
+                          <h2 style={{ color: '#64748b' }}>Allocation Audit History</h2>
+                          <span className="live-pill" style={{ background: '#f1f5f9', color: '#64748b' }}>LATEST: APRIL 7, 2026</span>
+                       </div>
+                       <table className="modern-table history-table">
                           <thead>
                              <tr>
-                                <th>ID</th>
-                                <th>Student Name</th>
-                                <th>College</th>
-                                <th>Applied Date</th>
-                                <th>Match Score</th>
-                                <th>Actions</th>
+                                <th>Student Account</th>
+                                <th>Assigned Hostel</th>
+                                <th>Room ID</th>
+                                <th>Staff Action</th>
+                                <th>Timestamp</th>
                              </tr>
                           </thead>
                           <tbody>
-                             {apps.map(app => (
-                                <tr key={app.id}>
-                                   <td>{app.id}</td>
-                                   <td><strong>{app.student}</strong></td>
-                                   <td>{app.college}</td>
-                                   <td>{app.date}</td>
+                             {history.map(item => (
+                                <tr key={item.id}>
                                    <td>
-                                      <div className="score-pill" style={{ background: app.compatibility > 85 ? '#dcfce7' : '#fef9c3' }}>
-                                         {app.compatibility}%
-                                      </div>
+                                       <div className="student-profile-v3">
+                                          <strong>{item.student}</strong>
+                                          <small>{item.email}</small>
+                                       </div>
                                    </td>
-                                   <td>
-                                      <button className="btn-icon-table" onClick={() => alert(`Viewing details for ${app.student}...`)}><ChevronRight size={18} /></button>
-                                   </td>
+                                   <td>{item.hostel}</td>
+                                   <td><strong>{item.room}</strong></td>
+                                   <td><span className="status-badge success">ALLOCATED</span></td>
+                                   <td className="text-muted">{item.date} 12:45 PM</td>
                                 </tr>
                              ))}
                           </tbody>
                        </table>
-                    ) : (
-                       <div className="empty-state text-center py-10">
-                          <CheckCircle size={48} color="#10b981" />
-                          <h3 className="mt-4">Queue Clear!</h3>
-                          <p>All pending applications have been processed for today.</p>
-                       </div>
-                    )}
-                 </div>
-              )}
+                    </div>
+                  </div>
+               )}
 
               {activeTab === 'allocation' && (
                  <div className="smart-allocation-view">

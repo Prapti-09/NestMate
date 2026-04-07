@@ -41,12 +41,12 @@ function PropertyDetails() {
              <ArrowLeft size={18} /> <span>Back</span>
           </Link>
           <div className="main-image-wrap">
-             <img src="https://images.unsplash.com/photo-1555854817-5b233633e085?auto=format&fit=crop&q=80&w=1200" alt="Room" />
+             <img src="/hostel-room.png" alt="Room" />
           </div>
           <div className="side-images">
-             <img src="https://images.unsplash.com/photo-1595113316349-9fa4ee24f884?auto=format&fit=crop&q=80&w=600" alt="Bed View" />
+             <img src="/hostel-room.png" alt="Bed View" />
              <div className="more-images-overlay">
-                <img src="https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&q=80&w=600" alt="Lobby" />
+                <img src="/hostel-room.png" alt="Lobby" />
                 <div className="overlay-content"><Plus size={24} /> <span>12+ Photos</span></div>
              </div>
           </div>
