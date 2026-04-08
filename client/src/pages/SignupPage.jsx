@@ -30,6 +30,11 @@ const SignupPage = () => {
       if (result.error) {
         setError(result.error);
       } else {
+        if (result.role === 'employee' && result.verification_status === 'pending') {
+            setError('Sent to admin for verification. You can login once approved.');
+            return;
+        }
+
         // Success
         login(result); // result contains { id, name, role }
         

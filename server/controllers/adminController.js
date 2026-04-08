@@ -35,11 +35,22 @@ const getAdminHostels = async (req, res) => {
 
 const getAdminStaff = async (req, res) => {
     try {
-        const [staff] = await db.execute('SELECT id, name, email FROM users WHERE role = "employee"');
+        const [staff] = await db.execute('SELECT id, name, email, verification_status FROM users WHERE role = "employee" ORDER BY CASE WHEN verification_status = "pending" THEN 1 ELSE 2 END, created_at DESC');
         res.json(staff);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-module.exports = { getAdminDashboard, getAdminHostels, getAdminStaff };
+const updateStaffVerification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        await db.execute('UPDATE users SET verification_status = ? WHERE id = ?', [status, id]);
+        res.json({ message: `Staff verification updated to ${status}` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = { getAdminDashboard, getAdminHostels, getAdminStaff, updateStaffVerification };

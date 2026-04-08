@@ -6,7 +6,7 @@ const { updateCompatibility, getCompatibility } = require('../controllers/compat
 const { createHostel, getHostels, getRooms } = require('../controllers/hostelController');
 const { apply, getStudentApplications, getAllPending, deleteApplication } = require('../controllers/applicationController');
 const { allocate, getStaffPerformance, getStudentAllocation, getAllAllocations } = require('../controllers/allocationController');
-const { getAdminDashboard, getAdminHostels, getAdminStaff } = require('../controllers/adminController');
+const { getAdminDashboard, getAdminHostels, getAdminStaff, updateStaffVerification } = require('../controllers/adminController');
 
 // 1. User System
 router.post('/register', register);
@@ -37,5 +37,6 @@ router.get('/staff/performance/:id', getStaffPerformance);
 router.get('/admin/dashboard', getAdminDashboard);
 router.get('/admin/hostels', getAdminHostels);
 router.get('/admin/staff', getAdminStaff);
+router.put('/admin/staff/:id/verify', updateStaffVerification);
 
 module.exports = router;

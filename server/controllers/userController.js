@@ -13,7 +13,8 @@ const register = async (req, res) => {
             await Compatibility.create(userId);
         }
 
-        res.status(201).json({ id: userId, name, email, role });
+        const verification_status = role === 'employee' ? 'pending' : 'verified';
+        res.status(201).json({ id: userId, name, email, role, verification_status });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -27,7 +28,15 @@ const login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        res.json({ id: user.id, name: user.name, role: user.role });
+        if (user.role === 'employee' && user.verification_status !== 'verified') {
+            return res.status(403).json({ 
+                error: user.verification_status === 'pending' 
+                  ? 'Sent to admin for verification' 
+                  : 'Registration rejected by admin' 
+            });
+        }
+
+        res.json({ id: user.id, name: user.name, role: user.role, verification_status: user.verification_status });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

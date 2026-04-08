@@ -4,8 +4,10 @@ import {
   Building, Users, BarChart3, Settings, 
   Plus, Search, ArrowRight, ShieldCheck, 
   MapPin, Clock, Zap, TrendingUp, TrendingDown,
-  UserCheck, AlertCircle, LayoutDashboard, Check
+  UserCheck, AlertCircle, LayoutDashboard, Check,
+  X, CheckCircle, XCircle
 } from 'lucide-react';
+import { getRequest, putRequest } from '../services/api';
 
 const StatCard = ({ icon: Icon, label, value, trend, color, subtext }) => (
   <div className="card stat-card-inst">
@@ -28,33 +30,62 @@ const StatCard = ({ icon: Icon, label, value, trend, color, subtext }) => (
   </div>
 );
 
-const EmployeeRow = ({ name, role, completed, time, efficiency }) => (
+const EmployeeRow = ({ id, name, email, verification_status, onVerify }) => (
   <tr className="employee-row">
      <td>
         <div className="employee-info">
            <div className="emp-avatar">{name[0]}</div>
            <div>
               <div className="emp-name">{name}</div>
-              <div className="emp-role">{role}</div>
+              <div className="emp-role">{email}</div>
            </div>
         </div>
      </td>
-     <td className="emp-comp">{completed} <small>Students</small></td>
-     <td className="emp-time">{time} <small>Avg/Task</small></td>
+     <td className="emp-comp">342 <small>Students</small></td>
+     <td className="emp-time">4.2m <small>Avg/Task</small></td>
+     <td className="emp-verif">
+        {verification_status === 'pending' && <span className="status-badge pending">Pending</span>}
+        {verification_status === 'verified' && <span className="status-badge verified">Verified</span>}
+        {verification_status === 'rejected' && <span className="status-badge rejected">Rejected</span>}
+     </td>
      <td>
-        <div className="efficiency-box">
-           <div className="efficiency-bar">
-              <div className="eff-fill" style={{ width: `${efficiency}%`, backgroundColor: efficiency > 90 ? '#10b981' : '#f97316' }}></div>
-           </div>
-           <span className="eff-val">{efficiency}%</span>
-        </div>
+       <div className="action-buttons-verif">
+         {verification_status === 'pending' ? (
+            <>
+              <button className="btn btn-icon btn-success block-icon" onClick={() => onVerify(id, 'verified')} title="Approve">
+                 <CheckCircle size={20} />
+              </button>
+              <button className="btn btn-icon btn-danger block-icon" onClick={() => onVerify(id, 'rejected')} title="Reject">
+                 <XCircle size={20} />
+              </button>
+            </>
+         ) : (
+            <button className="btn btn-outline btn-sm" onClick={() => alert(`Reviewing reports for ${name}...`)}>Reports</button>
+         )}
+       </div>
      </td>
-     <td><button className="btn btn-outline btn-sm" onClick={() => alert(`Reviewing reports for ${name}...`)}>Reviews Reports</button></td>
   </tr>
 );
 
 const InstitutePanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [staffData, setStaffData] = useState([]);
+
+  React.useEffect(() => {
+    if (activeTab === 'staff') {
+       fetchStaff();
+    }
+  }, [activeTab]);
+
+  const fetchStaff = async () => {
+    const res = await getRequest('/admin/staff');
+    if (!res.error) setStaffData(res);
+  };
+
+  const handleVerify = async (id, status) => {
+    await putRequest(`/admin/staff/${id}/verify`, { status });
+    fetchStaff();
+  };
 
   const handleAddBuilding = () => {
      alert('Opening Building Configuration Wizard...');
@@ -220,15 +251,22 @@ const InstitutePanel = () => {
                           <th>Employee</th>
                           <th>Allocations Done</th>
                           <th>Avg Handling Time</th>
-                          <th>Efficiency Score</th>
+                          <th>Verification</th>
                           <th>Actions</th>
                        </tr>
                     </thead>
                     <tbody>
-                       <EmployeeRow name="Aditi Rao" role="Senior Staff" completed={342} time="4.2m" efficiency={96} />
-                       <EmployeeRow name="Vikram Singh" role="Junior Staff" completed={218} time="5.8m" efficiency={88} />
-                       <EmployeeRow name="Pooja Sharma" role="Intern" completed={145} time="8.1m" efficiency={74} />
-                       <EmployeeRow name="Kapil Dev" role="Senior Staff" completed={412} time="3.9m" efficiency={98} />
+                       {staffData.map(emp => (
+                          <EmployeeRow 
+                            key={emp.id} 
+                            id={emp.id}
+                            name={emp.name} 
+                            email={emp.email}
+                            verification_status={emp.verification_status} 
+                            onVerify={handleVerify}
+                          />
+                       ))}
+                       {staffData.length === 0 && <tr><td colSpan="5">No staff found...</td></tr>}
                     </tbody>
                  </table>
               </div>
@@ -304,6 +342,16 @@ const InstitutePanel = () => {
         .inner-alg-card { padding: 2rem; }
         .status-indicator { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 800; margin-top: 1rem; }
         .status-indicator.enabled { background: #dcfce7; color: #166534; }
+
+        .action-buttons-verif { display: flex; gap: 8px; align-items: center; }
+        .btn-icon { background: none; border: none; padding: 4px; cursor: pointer; transition: transform 0.2s; }
+        .btn-icon:hover { transform: scale(1.1); }
+        .btn-success { color: #10b981; }
+        .btn-danger { color: #f43f5e; }
+        .status-badge { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; }
+        .status-badge.pending { background: #fef08a; color: #854d0e; }
+        .status-badge.verified { background: #dcfce7; color: #166534; }
+        .status-badge.rejected { background: #fee2e2; color: #991b1b; }
 
         @media (max-width: 1200px) {
            .panel-grid-2 { grid-template-columns: 1fr; }

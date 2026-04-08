@@ -2,9 +2,10 @@ const db = require('../config/db');
 
 class User {
     static async create(name, email, password, role = 'student') {
+        const verificationStatus = role === 'employee' ? 'pending' : 'verified';
         const [result] = await db.execute(
-            'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-            [name, email, password, role]
+            'INSERT INTO users (name, email, password, role, verification_status) VALUES (?, ?, ?, ?, ?)',
+            [name, email, password, role, verificationStatus]
         );
         return result.insertId;
     }
