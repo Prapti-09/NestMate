@@ -10,9 +10,15 @@ import { useAuth } from '../context/AuthContext';
 const PaymentPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [method, setMethod] = useState('card');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const basePriceStr = location.state?.amount || '12,400';
+  const basePriceNum = parseInt(basePriceStr.replace(',', ''), 10);
+  const serviceTax = Math.floor(basePriceNum * 0.01);
+  const totalAmount = (basePriceNum + serviceTax).toLocaleString('en-IN');
 
   const handlePayment = (e) => {
     e.preventDefault();
@@ -89,7 +95,7 @@ const PaymentPage = () => {
                           </div>
                        </div>
                        <button type="submit" className="btn btn-primary w-full mt-4" disabled={processing}>
-                          {processing ? 'Processing...' : 'Pay ₹12,400 Now'}
+                          {processing ? 'Processing...' : `Pay ₹${basePriceStr} Now`}
                        </button>
                     </form>
                  )}
@@ -111,11 +117,11 @@ const PaymentPage = () => {
                  <h3>Order Summary</h3>
                  <div className="summary-row">
                     <span>Hostel Monthly Fees</span>
-                    <span>₹12,400</span>
+                    <span>₹{basePriceStr}</span>
                  </div>
                  <div className="summary-row">
                     <span>Service Tax (1%)</span>
-                    <span>₹124</span>
+                    <span>₹{serviceTax}</span>
                  </div>
                  <div className="summary-row">
                     <span>Security Deposit</span>
@@ -123,7 +129,7 @@ const PaymentPage = () => {
                  </div>
                  <div className="total-row">
                     <span>Total Amount</span>
-                    <span>₹12,524</span>
+                    <span>₹{totalAmount}</span>
                  </div>
                  <div className="security-note">
                     <ShieldCheck size={18} />

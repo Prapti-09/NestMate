@@ -22,12 +22,20 @@ const getStaffPerformance = async (req, res) => {
 
 const getStudentAllocation = async (req, res) => {
     try {
-        const result = await Allocation.getByStudent(req.params.studentId);
+        const result = await Allocation.getByStudent(req.params.userId);
         if (!result) return res.status(404).json({ error: 'No allocation found for this student' });
         res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+const getAllAllocations = async (req, res) => {
+    try {
+        const result = await Allocation.getHistory();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
-module.exports = { allocate, getStaffPerformance, getStudentAllocation };
+module.exports = { allocate, getStaffPerformance, getStudentAllocation, getAllAllocations };

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, CheckCircle, Clock, Zap, 
   Search, Filter, ChevronRight, AlertCircle,
@@ -20,6 +21,7 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
 );
 
 const EmployeePanel = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState(null);
@@ -31,12 +33,13 @@ const EmployeePanel = () => {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const data = await getRequest('/applications');
+      const data = await getRequest('/applications/all');
       if (data && Array.isArray(data)) {
         // Map backend names to frontend display fields
         const formatted = data.map(app => ({
           id: `APP${app.id}`,
           rawId: app.id,
+          student_id: app.student_id,
           student: app.user_name || 'Guest User', 
           email: app.user_email || 'No email',
           college: app.user_college || 'SRM University',
@@ -51,6 +54,21 @@ const EmployeePanel = () => {
       } else {
         setApps([]);
       }
+
+      // Fetch Live History
+      const histData = await getRequest('/allocations/history');
+      if (histData && Array.isArray(histData)) {
+          setHistory(histData.map(item => ({
+              id: `AUD${item.id}`,
+              student: item.student,
+              email: item.email,
+              hostel: item.hostel,
+              room: item.room,
+              date: item.date
+          })));
+      } else {
+          setHistory([]);
+      }
     } catch (err) {
       console.error('Failed to sync employee queue:', err);
       setApps([]);
@@ -61,22 +79,41 @@ const EmployeePanel = () => {
 
   React.useEffect(() => {
     fetchApplications();
+    const interval = setInterval(fetchApplications, 10000); // 10 seconds
+    return () => clearInterval(interval);
   }, []);
   
-  const handleAutoAllocate = () => {
+  const handleAutoAllocate = async () => {
     setLoading(true);
-    setTimeout(() => {
-      // Move all current apps to history
-      const newHistory = apps.map(app => ({
-        ...app,
-        room: Math.floor(100 + Math.random() * 900) + '-B',
-        date: '2026-04-07'
-      }));
-      setHistory([...history, ...newHistory]);
-      setApps([]);
+    let successCount = 0;
+    let errors = [];
+    try {
+      for (const app of apps) {
+        // Find the right ID regardless of session format
+        const staffId = user?.id || user?.user?.id;
+        
+        const res = await postRequest('/allocate', { 
+          applicationId: app.rawId, 
+          employeeId: staffId || 1 // Fallback to 1 if testing locally
+        });
+        if (!res.error) {
+          successCount++;
+        } else {
+          errors.push(`${app.student}: ${res.error}`);
+        }
+      }
+      
+      await fetchApplications(); // Refresh the list from DB
+      let msg = `Queue Processed: ${successCount} Students Assigned.`;
+      if (errors.length > 0) {
+        msg += `\n\nSkipped ${errors.length} students:\n` + errors.join('\n');
+      }
+      alert(msg);
+    } catch (err) {
+      alert('Error during allocation: ' + err.message);
+    } finally {
       setLoading(false);
-      alert('FIFO Queue Processed: 3 Students Assigned to Cloud Rooms.');
-    }, 2000);
+    }
   };
 
   const handleRunEngine = () => {
@@ -92,8 +129,8 @@ const EmployeePanel = () => {
       <div className="container">
         <header className="panel-header">
            <div className="header-text">
-              <h1>Employee Taskbar</h1>
-              <p>Hostel Allocation & Student Management System</p>
+              <h1>Welcome, {user?.name || 'Staff Member'}</h1>
+              <p>Employee Taskbar • Hostel Allocation & Management</p>
            </div>
            <div className="performance-summary">
               <Award size={20} color="#7c3aed" />
@@ -214,7 +251,7 @@ const EmployeePanel = () => {
                                    <td>{item.hostel}</td>
                                    <td><strong>{item.room}</strong></td>
                                    <td><span className="status-badge success">ALLOCATED</span></td>
-                                   <td className="text-muted">{item.date} 12:45 PM</td>
+                                   <td className="text-muted">{item.date}</td>
                                 </tr>
                              ))}
                           </tbody>
@@ -310,9 +347,25 @@ const EmployeePanel = () => {
                               <div className="admin-actions">
                                  <button 
                                    className="btn btn-primary w-full" 
-                                   onClick={() => { alert('Allocation Finalized: Student Notified.'); setSelectedApp(null); }}
+                                   onClick={async () => { 
+                                     setLoading(true);
+                                     const staffId = user?.id || user?.user?.id;
+                                     const res = await postRequest('/allocate', { 
+                                       applicationId: selectedApp.rawId, 
+                                       employeeId: staffId || 1
+                                     });
+                                     if (!res.error) {
+                                       alert('Allocation Finalized: Student Notified.');
+                                       setSelectedApp(null);
+                                       fetchApplications();
+                                     } else {
+                                       alert('Failed: ' + res.error);
+                                     }
+                                     setLoading(false);
+                                   }}
+                                    disabled={loading}
                                  >
-                                    Approve Allocation
+                                    {loading ? 'Processing...' : 'Approve Allocation'}
                                  </button>
                                  <button className="btn btn-outline w-full" onClick={() => setSelectedApp(null)}>Flag for Missing Docs</button>
                               </div>

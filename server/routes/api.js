@@ -4,8 +4,8 @@ const router = express.Router();
 const { register, login } = require('../controllers/userController');
 const { updateCompatibility, getCompatibility } = require('../controllers/compatibilityController');
 const { createHostel, getHostels, getRooms } = require('../controllers/hostelController');
-const { apply, getStudentApplications, getAllPending } = require('../controllers/applicationController');
-const { allocate, getStaffPerformance, getStudentAllocation } = require('../controllers/allocationController');
+const { apply, getStudentApplications, getAllPending, deleteApplication } = require('../controllers/applicationController');
+const { allocate, getStaffPerformance, getStudentAllocation, getAllAllocations } = require('../controllers/allocationController');
 const { getAdminDashboard, getAdminHostels, getAdminStaff } = require('../controllers/adminController');
 
 // 1. User System
@@ -23,12 +23,14 @@ router.get('/rooms/:hostelId', getRooms);
 
 // 4. Application System
 router.post('/apply', apply);
-router.get('/applications/student/:id', getStudentApplications);
+router.get('/applications/user/:id', getStudentApplications);
 router.get('/applications/all', getAllPending);
+router.delete('/applications/:id', deleteApplication);
 
 // 5. Smart Allocation & Performance
 router.post('/allocate', allocate);
-router.get('/allocation/:studentId', getStudentAllocation);
+router.get('/allocations/user/:userId', getStudentAllocation);
+router.get('/allocations/history', getAllAllocations);
 router.get('/staff/performance/:id', getStaffPerformance);
 
 // 6. Admin Features

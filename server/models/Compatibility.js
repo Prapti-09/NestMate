@@ -15,7 +15,7 @@ class Compatibility {
     }
 
     static async findByUserId(userId) {
-        const [rows] = await db.execute('SELECT * FROM compatibility WHERE user_id = ?', [userId]);
+        const [rows] = await db.execute('SELECT * FROM compatibility WHERE user_id = ?', [userId || null]);
         return rows[0];
     }
 

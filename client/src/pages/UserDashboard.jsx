@@ -9,16 +9,16 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getRequest } from '../services/api';
+import { getRequest, deleteRequest } from '../services/api';
 
 const AllocationStages = ({ currentStage, hostelName }) => {
   const [selectedInfo, setSelectedInfo] = useState(null);
   
   const stages = [
-    { id: 1, title: 'Received', icon: FileText, desc: 'Application submitted', info: 'Your request for ' + hostelName + ' was logged in our cloud database successfully.' },
+    { id: 1, title: 'Received', icon: FileText, desc: 'Application submitted', info: 'Your request for ' + (hostelName || 'Hostel') + ' was logged in our cloud database successfully.' },
     { id: 2, title: 'Verification', icon: ShieldCheck, desc: 'Identity check', info: 'Academic and residency documents are currently being cross-referenced by staff.' },
     { id: 3, title: 'Matching', icon: Zap, desc: 'Roommate sync', info: 'Finding the most compatible roommate based on your lifestyle preferences.' },
-    { id: 4, title: 'Selection', icon: Building, desc: 'Room reserved', info: 'A specific room in block ' + hostelName[0] + ' is being held for you.' },
+    { id: 4, title: 'Selection', icon: Building, desc: 'Room reserved', info: 'A specific room in block ' + (hostelName?.charAt(0) || 'H') + ' is being held for you.' },
     { id: 5, title: 'Key Issued', icon: CheckCircle2, desc: 'Key activated', info: 'Welcome home! Your digital key is now active on your mobile app.' }
   ];
 
@@ -128,7 +128,7 @@ const ComplianceTracker = () => {
   );
 };
 
-const PaymentCalendar = ({ isAllocated }) => {
+const PaymentCalendar = ({ allocatedHostel, allocatedRoom }) => {
   // Hard-coded for the April 7th Presentation
   const presentationDate = new Date(2026, 3, 7); 
   const currentMonth = presentationDate.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -142,6 +142,16 @@ const PaymentCalendar = ({ isAllocated }) => {
       t: d.getDate() === 7 ? 'Today' : (d.getDate() === 15 ? 'Due' : null) 
     });
   }
+
+  // Determine dynamic price based on the actual room assigned (using room number to simulate 'single' vs 'shared' if needed)
+  // Or simply base it on a standard rule. Let's use the room number letter (e.g. 102-A = Shared, 102-S = Single) or default.
+  let isShared = true;
+  if (allocatedRoom && String(allocatedRoom).includes('S')) {
+      isShared = false;
+  }
+  
+  const paymentAmount = isShared ? '12,400' : '15,000';
+  const paymentType = isShared ? '2 Sharing AC' : 'Single Sharing AC';
 
   return (
     <div className="card calendar-card-v3">
@@ -158,13 +168,14 @@ const PaymentCalendar = ({ isAllocated }) => {
           ))}
        </div>
        <div className="next-payment-v3">
-          {isAllocated ? (
+          {allocatedRoom ? (
              <>
                 <div className="pay-text">
                    <h4>Next Payment Due</h4>
-                   <p>₹12,400 per month (Premium AC)</p>
+                   <p>₹{paymentAmount} per month ({paymentType})</p>
+                   <small style={{color: '#94a3b8', fontSize: '0.65rem'}}>For Room {allocatedRoom} in {allocatedHostel}</small>
                 </div>
-                <Link to="/payment" className="btn btn-primary btn-sm"><CreditCard size={14} /> Pay Now</Link>
+                <Link to="/payment" state={{ amount: paymentAmount }} className="btn btn-primary btn-sm"><CreditCard size={14} /> Pay Now</Link>
              </>
           ) : (
              <div className="pay-text waiting-v3">
@@ -181,17 +192,17 @@ const UserDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [application, setApplication] = useState(null);
-  const [allocation, setAllocation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [applications, setApplications] = useState([]);
+  const [allocations, setAllocations] = useState([]);
+  const [viewRoomModal, setViewRoomModal] = useState(null);
 
-  // Map DB status to Pipeline Stage (1-5)
-  const getStageFromStatus = (status) => {
+  const getStageFromStatus = (status, hasAllocation) => {
+    if (hasAllocation) return 5; // Automatically set to finish line if placed in a room
     switch (status) {
       case 'pending': return 1;
-      case 'approved': return 2;
-      case 'matching': return 3;
-      case 'selection': return 4;
+      case 'received': return 1;
+      case 'approved': return 5; 
       case 'allocated': return 5;
       default: return 1;
     }
@@ -229,11 +240,21 @@ const UserDashboard = () => {
     fetchData();
   }, [user]);
 
-  const [applications, setApplications] = useState([]);
-  const [allocations, setAllocations] = useState([]);
-
   const getCurrentAllocationForApp = (appId) => {
     return allocations.find(a => a.application_id === appId);
+  };
+
+  const handleWithdraw = async (appId) => {
+     if (window.confirm("Are you sure you want to withdraw this application? This will also definitively cancel any room assignments.")) {
+        const result = await deleteRequest(`/applications/${appId}`);
+        if (result && !result.error) {
+            setApplications(prev => prev.filter(app => app.id !== appId));
+            setAllocations(prev => prev.filter(a => a.application_id !== appId));
+            alert("Application withdrawn successfully. The space has been freed.");
+        } else {
+            alert("Failed to withdraw application: " + (result?.error || "Unknown Error"));
+        }
+     }
   };
 
   return (
@@ -273,7 +294,10 @@ const UserDashboard = () => {
 
               <div className="summary-widgets-v3">
                  <ComplianceTracker />
-                 <PaymentCalendar isAllocated={applications.some(app => app.status === 'allocated')} />
+                 <PaymentCalendar 
+                    allocatedHostel={allocations.length > 0 ? allocations[0].hostel_name : null}
+                    allocatedRoom={allocations.length > 0 ? allocations[0].room_number : null}
+                 />
               </div>
 
               <section className="dashboard-section-v3" id="bookings">
@@ -298,9 +322,9 @@ const UserDashboard = () => {
                                    </div>
                                 </div>
                                 
-                                <AllocationStages currentStage={getStageFromStatus(app.status)} hostelName={app.hostel_name} />
+                                <AllocationStages currentStage={getStageFromStatus(app.status, !!appAlloc)} hostelName={app.hostel_name} />
                                 
-                                {app.status === 'allocated' && appAlloc ? (
+                                {appAlloc ? (
                                    <div className="allocation-success-box">
                                       <div className="residence-card">
                                          <div className="res-icon"><Building size={24} /></div>
@@ -308,13 +332,25 @@ const UserDashboard = () => {
                                             <h4>{appAlloc.hostel_name}</h4>
                                             <p>Room {appAlloc.room_number} • Your booking is finalized.</p>
                                          </div>
-                                         <button className="btn btn-outline btn-sm">Download Letter</button>
+                                         <button 
+                                            className="btn btn-primary btn-sm" 
+                                            onClick={() => setViewRoomModal(appAlloc)}
+                                         >
+                                            Click here to see your Room
+                                         </button>
                                       </div>
                                    </div>
                                 ) : (
                                    <div className="allocation-notice-v3">
                                       <Info size={18} />
-                                      <p>Booking for {app.hostel_name}. Interaction above will show detailed step progress.</p>
+                                      <p style={{flex: 1}}>Booking for {app.hostel_name}. Interaction above will show detailed step progress.</p>
+                                      <button 
+                                          className="btn btn-outline btn-sm" 
+                                          style={{color: '#ef4444', borderColor: '#ef4444', border: '1px solid #ef4444', height: '32px', backgroundColor: 'white'}}
+                                          onClick={() => handleWithdraw(app.id)}
+                                      >
+                                          Withdraw Request
+                                      </button>
                                    </div>
                                 )}
                             </div>
@@ -351,6 +387,61 @@ const UserDashboard = () => {
            </main>
         </div>
       </div>
+
+      <AnimatePresence>
+         {viewRoomModal && (
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="modal-overlay-v3"
+            >
+               <motion.div 
+                  initial={{ scale: 0.9, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  className="card room-detail-modal"
+               >
+                  <div className="room-modal-image">
+                     <img 
+                        src="/hostel-room.png" 
+                        alt="Your assigned room" 
+                     />
+                     <div className="room-modal-tag">Room {viewRoomModal.room_number}</div>
+                     <button className="close-btn-layered" onClick={() => setViewRoomModal(null)}>&times;</button>
+                  </div>
+                  
+                  <div className="room-modal-body">
+                     <h3 className="room-title">Welcome to {viewRoomModal.hostel_name}</h3>
+                     <p className="room-address"><MapPin size={16}/> SRM University Main Campus, Student Housing Block</p>
+                     
+                     <div className="room-specs-grid">
+                        <div className="spec-card">
+                           <span className="spec-label">Room Type</span>
+                           <strong className="spec-value">{String(viewRoomModal.room_number).includes('S') ? 'Premium Single AC' : 'Double Sharing AC'}</strong>
+                        </div>
+                        <div className="spec-card">
+                           <span className="spec-label">Monthly Rent</span>
+                           <strong className="spec-value" style={{color: '#7c3aed'}}>₹{String(viewRoomModal.room_number).includes('S') ? '15,000' : '12,400'}</strong>
+                        </div>
+                        <div className="spec-card">
+                           <span className="spec-label">Move-in Date</span>
+                           <strong className="spec-value">Available Immediately</strong>
+                        </div>
+                        <div className="spec-card">
+                           <span className="spec-label">Digital Key</span>
+                           <strong className="spec-value" style={{color: '#10b981'}}>Active & Synced</strong>
+                        </div>
+                     </div>
+                     
+                     <div className="room-modal-actions">
+                         <button className="btn btn-outline" onClick={() => alert("Digital Key sent to your SMS!")}><Zap size={18}/> Get Mobile Key</button>
+                         <button className="btn btn-primary" onClick={() => alert("Connecting you to your new roommate!")}><MessageCircle size={18}/> Contact Roommate</button>
+                     </div>
+                  </div>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
 
       <style>{`
         .user-dashboard-v3 { padding: 4rem 0; background: #f8fafc; min-height: 100vh; }
@@ -445,6 +536,26 @@ const UserDashboard = () => {
            .pipeline-step { flex-direction: row; text-align: left; align-items: flex-start; gap: 1.5rem; }
            .step-labels { align-items: flex-start; }
         }
+
+        /* Modal Styles */
+        .modal-overlay-v3 { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1.5rem; }
+        .room-detail-modal { background: white; width: 100%; max-width: 600px; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: none; }
+        .room-modal-image { position: relative; width: 100%; height: 280px; }
+        .room-modal-image img { width: 100%; height: 100%; object-fit: cover; }
+        .room-modal-tag { position: absolute; bottom: -20px; right: 30px; background: #7c3aed; color: white; padding: 10px 24px; border-radius: 9999px; font-weight: 800; font-size: 1.25rem; border: 4px solid white; box-shadow: 0 10px 15px rgba(124, 58, 237, 0.3); }
+        .close-btn-layered { position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; backdrop-filter: blur(4px); transition: all 0.2s; }
+        .close-btn-layered:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
+        
+        .room-modal-body { padding: 3rem 2rem 2rem 2rem; }
+        .room-title { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+        .room-address { display: flex; align-items: center; gap: 8px; color: #64748b; font-weight: 600; font-size: 0.9rem; margin-bottom: 2rem; }
+        
+        .room-specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+        .spec-card { background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 4px; }
+        .spec-label { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; }
+        .spec-value { font-size: 1.1rem; color: #1e293b; }
+
+        .room-modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
       `}</style>
     </div>
   );

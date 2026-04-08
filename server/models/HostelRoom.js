@@ -10,12 +10,16 @@ class Hostel {
     }
 
     static async getAll() {
-        const [rows] = await db.execute('SELECT * FROM hostels');
+        const [rows] = await db.execute(`
+            SELECT h.*, 
+                IFNULL((SELECT COUNT(*) FROM rooms WHERE hostel_id = h.id AND occupied_count < capacity), 0) as available_rooms
+            FROM hostels h
+        `);
         return rows;
     }
 
     static async findById(id) {
-        const [rows] = await db.execute('SELECT * FROM hostels WHERE id = ?', [id]);
+        const [rows] = await db.execute('SELECT * FROM hostels WHERE id = ?', [id || null]);
         return rows[0];
     }
 }
@@ -30,7 +34,7 @@ class Room {
     }
 
     static async findByHostel(hostelId) {
-        const [rows] = await db.execute('SELECT * FROM rooms WHERE hostel_id = ?', [hostelId]);
+        const [rows] = await db.execute('SELECT * FROM rooms WHERE hostel_id = ?', [hostelId || null]);
         return rows;
     }
 
@@ -38,13 +42,13 @@ class Room {
         // Find rooms with capacity available
         const [rows] = await db.execute(
             'SELECT * FROM rooms WHERE hostel_id = ? AND occupied_count < capacity',
-            [hostelId]
+            [hostelId || null]
         );
         return rows;
     }
 
     static async incrementOccupancy(roomId) {
-        await db.execute('UPDATE rooms SET occupied_count = occupied_count + 1 WHERE id = ?', [roomId]);
+        await db.execute('UPDATE rooms SET occupied_count = occupied_count + 1 WHERE id = ?', [roomId || null]);
     }
 }
 

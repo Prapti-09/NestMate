@@ -29,7 +29,8 @@ const SearchPage = () => {
           location: "Near Main Gate",
           rating: (4.2 + Math.random() * 0.8).toFixed(1),
           capacity: h.total_capacity,
-          availableFrom: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }), // April 7, 2026
+          available_rooms: h.available_rooms,
+          availableFrom: h.available_rooms > 0 ? `${h.available_rooms} Rooms Available` : 'No Rooms Available', // dynamically populate this
           amenities: ["Free Wi-Fi", "Laundry", "Gym"],
           image: "/hostel-room.png" 
         }));
@@ -119,8 +120,8 @@ const SearchPage = () => {
                        <h3>{room.name}</h3>
                        <div className="card-loc-v2"><MapPin size={14} /> {room.location}</div>
                        <div className="date-availability-v3">
-                          <Zap size={12} color="#10b981" fill="#10b981" />
-                          <span>Last Verified: {room.availableFrom}</span>
+                          <Zap size={12} color={room.available_rooms > 0 ? "#10b981" : "#ef4444"} fill={room.available_rooms > 0 ? "#10b981" : "#ef4444"} />
+                          <span style={{color: room.available_rooms > 0 ? 'inherit' : '#ef4444'}}>{room.availableFrom}</span>
                        </div>
                        
                        <div className="amenity-strip-v2">

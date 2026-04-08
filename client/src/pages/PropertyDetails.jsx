@@ -66,7 +66,7 @@ function PropertyDetails() {
         status: 'received'
       };
 
-      const response = await postRequest('/applications', bookingData);
+      const response = await postRequest('/apply', bookingData);
       if (response.error) throw new Error(response.error);
 
       alert("Booking Request Received! Check your dashboard for the live tracker.");
